@@ -1,13 +1,6 @@
 # MCP Atlassian
 
-[![smithery badge](https://smithery.ai/badge/mcp-atlassian)](https://smithery.ai/server/mcp-atlassian)
-
 Model Context Protocol (MCP) server for Atlassian Cloud products (Confluence and Jira). This integration is designed specifically for Atlassian Cloud instances and does not support Atlassian Server or Data Center deployments.
-
-<a href="https://glama.ai/mcp/servers/kc33m1kh5m"><img width="380" height="200" src="https://glama.ai/mcp/servers/kc33m1kh5m/badge" alt="Atlassian MCP server" /></a>
-
-### Feature Demo
-![Demo](https://github.com/user-attachments/assets/995d96a8-4cf3-4a03-abe1-a9f6aea27ac0)
 
 ### Resources
 
@@ -66,17 +59,27 @@ Model Context Protocol (MCP) server for Atlassian Cloud products (Confluence and
 
 ## Installation
 
-### Using uv (recommended)
+### Local Installation
 
-When using [`uv`](https://docs.astral.sh/uv/), use [`uvx`](https://docs.astral.sh/uv/guides/tools/) to directly run *mcp-atlassian*.
-
-### Using Smithery
-
-To install Atlassian Integration automatically via [Smithery](https://smithery.ai/server/mcp-atlassian):
-
+1. Clone the repository:
 ```bash
-npx -y @smithery/cli install mcp-atlassian --client claude
+git clone https://github.com/pashpashpash/mcp-atlassian.git
+cd mcp-atlassian
 ```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Build the project:
+```bash
+npm run build
+```
+
+### Using uv (alternative)
+
+When using [`uv`](https://docs.astral.sh/uv/), you can use [`uvx`](https://docs.astral.sh/uv/guides/tools/) to directly run *mcp-atlassian*.
 
 ## Configuration
 
@@ -89,7 +92,50 @@ The MCP Atlassian integration supports using either Confluence, Jira, or both se
 2. Add to your `claude_desktop_config.json` with only the services you need:
 
 <details>
+<summary>Local Installation</summary>
+
+```json
+{
+  "mcpServers": {
+    "mcp-atlassian": {
+      "command": "node",
+      "args": ["path/to/build/index.js"],
+      "env": {
+        "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
+        "CONFLUENCE_USERNAME": "your.email@domain.com",
+        "CONFLUENCE_API_TOKEN": "your_api_token",
+        "JIRA_URL": "https://your-domain.atlassian.net",
+        "JIRA_USERNAME": "your.email@domain.com",
+        "JIRA_API_TOKEN": "your_api_token"
+      }
+    }
+  }
+}
+```
+</details>
+
+<details>
 <summary>Using uvx</summary>
+
+For both services:
+```json
+{
+  "mcpServers": {
+    "mcp-atlassian": {
+      "command": "uvx",
+      "args": ["mcp-atlassian"],
+      "env": {
+        "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
+        "CONFLUENCE_USERNAME": "your.email@domain.com",
+        "CONFLUENCE_API_TOKEN": "your_api_token",
+        "JIRA_URL": "https://your-domain.atlassian.net",
+        "JIRA_USERNAME": "your.email@domain.com",
+        "JIRA_API_TOKEN": "your_api_token"
+      }
+    }
+  }
+}
+```
 
 For Confluence only:
 ```json
@@ -116,26 +162,6 @@ For Jira only:
       "command": "uvx",
       "args": ["mcp-atlassian"],
       "env": {
-        "JIRA_URL": "https://your-domain.atlassian.net",
-        "JIRA_USERNAME": "your.email@domain.com",
-        "JIRA_API_TOKEN": "your_api_token"
-      }
-    }
-  }
-}
-```
-
-For both services:
-```json
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "command": "uvx",
-      "args": ["mcp-atlassian"],
-      "env": {
-        "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
-        "CONFLUENCE_USERNAME": "your.email@domain.com",
-        "CONFLUENCE_API_TOKEN": "your_api_token",
         "JIRA_URL": "https://your-domain.atlassian.net",
         "JIRA_USERNAME": "your.email@domain.com",
         "JIRA_API_TOKEN": "your_api_token"
@@ -199,7 +225,6 @@ JIRA_URL=https://your-domain.atlassian.net
 JIRA_USERNAME=your.email@domain.com
 JIRA_API_TOKEN=your_api_token
 ```
-
 </details>
 
 ## Debugging
@@ -210,10 +235,10 @@ You can use the MCP inspector to debug the server:
 npx @modelcontextprotocol/inspector uvx mcp-atlassian
 ```
 
-For development installations:
+For local development:
 ```bash
 cd path/to/mcp-atlassian
-npx @modelcontextprotocol/inspector uv run mcp-atlassian
+npx @modelcontextprotocol/inspector node ./build/index.js
 ```
 
 View logs with:
