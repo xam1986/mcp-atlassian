@@ -2,6 +2,9 @@
 
 Model Context Protocol (MCP) server for Atlassian Cloud products (Confluence and Jira). This integration is designed specifically for Atlassian Cloud instances and does not support Atlassian Server or Data Center deployments.
 
+### Feature Demo
+![Demo](https://github.com/user-attachments/assets/995d96a8-4cf3-4a03-abe1-a9f6aea27ac0)
+
 ### Resources
 
 - `confluence://{space_key}`: Access Confluence spaces and pages
@@ -59,27 +62,21 @@ Model Context Protocol (MCP) server for Atlassian Cloud products (Confluence and
 
 ## Installation
 
-### Local Installation
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/pashpashpash/mcp-atlassian.git
+   cd mcp-atlassian
+   ```
 
-1. Clone the repository:
-```bash
-git clone https://github.com/pashpashpash/mcp-atlassian.git
-cd mcp-atlassian
-```
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Build the project:
-```bash
-npm run build
-```
-
-### Using uv (alternative)
-
-When using [`uv`](https://docs.astral.sh/uv/), you can use [`uvx`](https://docs.astral.sh/uv/guides/tools/) to directly run *mcp-atlassian*.
+3. **Build the Project**:
+   ```bash
+   npm run build
+   ```
 
 ## Configuration
 
@@ -91,9 +88,41 @@ The MCP Atlassian integration supports using either Confluence, Jira, or both se
 
 2. Add to your `claude_desktop_config.json` with only the services you need:
 
-<details>
-<summary>Local Installation</summary>
+For Confluence only:
+```json
+{
+  "mcpServers": {
+    "mcp-atlassian": {
+      "command": "node",
+      "args": ["path/to/build/index.js"],
+      "env": {
+        "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
+        "CONFLUENCE_USERNAME": "your.email@domain.com",
+        "CONFLUENCE_API_TOKEN": "your_api_token"
+      }
+    }
+  }
+}
+```
 
+For Jira only:
+```json
+{
+  "mcpServers": {
+    "mcp-atlassian": {
+      "command": "node",
+      "args": ["path/to/build/index.js"],
+      "env": {
+        "JIRA_URL": "https://your-domain.atlassian.net",
+        "JIRA_USERNAME": "your.email@domain.com",
+        "JIRA_API_TOKEN": "your_api_token"
+      }
+    }
+  }
+}
+```
+
+For both services:
 ```json
 {
   "mcpServers": {
@@ -112,152 +141,19 @@ The MCP Atlassian integration supports using either Confluence, Jira, or both se
   }
 }
 ```
-</details>
-
-<details>
-<summary>Using uvx</summary>
-
-For both services:
-```json
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "command": "uvx",
-      "args": ["mcp-atlassian"],
-      "env": {
-        "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
-        "CONFLUENCE_USERNAME": "your.email@domain.com",
-        "CONFLUENCE_API_TOKEN": "your_api_token",
-        "JIRA_URL": "https://your-domain.atlassian.net",
-        "JIRA_USERNAME": "your.email@domain.com",
-        "JIRA_API_TOKEN": "your_api_token"
-      }
-    }
-  }
-}
-```
-
-For Confluence only:
-```json
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "command": "uvx",
-      "args": ["mcp-atlassian"],
-      "env": {
-        "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
-        "CONFLUENCE_USERNAME": "your.email@domain.com",
-        "CONFLUENCE_API_TOKEN": "your_api_token"
-      }
-    }
-  }
-}
-```
-
-For Jira only:
-```json
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "command": "uvx",
-      "args": ["mcp-atlassian"],
-      "env": {
-        "JIRA_URL": "https://your-domain.atlassian.net",
-        "JIRA_USERNAME": "your.email@domain.com",
-        "JIRA_API_TOKEN": "your_api_token"
-      }
-    }
-  }
-}
-```
-</details>
-
-<details>
-<summary>Using docker</summary>
-
-There are two ways to configure the Docker environment:
-
-1. Using environment variables directly in the config:
-```json
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "command": "docker",
-      "args": ["run", "--rm", "-i", "mcp/atlassian"],
-      "env": {
-        "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
-        "CONFLUENCE_USERNAME": "your.email@domain.com",
-        "CONFLUENCE_API_TOKEN": "your_api_token",
-        "JIRA_URL": "https://your-domain.atlassian.net",
-        "JIRA_USERNAME": "your.email@domain.com",
-        "JIRA_API_TOKEN": "your_api_token"
-      }
-    }
-  }
-}
-```
-
-2. Using an environment file (recommended):
-```json
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "--env-file",
-        "/path/to/your/.env",
-        "mcp/atlassian"
-      ]
-    }
-  }
-}
-```
-
-The .env file should contain:
-```env
-CONFLUENCE_URL=https://your-domain.atlassian.net/wiki
-CONFLUENCE_USERNAME=your.email@domain.com
-CONFLUENCE_API_TOKEN=your_api_token
-JIRA_URL=https://your-domain.atlassian.net
-JIRA_USERNAME=your.email@domain.com
-JIRA_API_TOKEN=your_api_token
-```
-</details>
 
 ## Debugging
 
 You can use the MCP inspector to debug the server:
 
 ```bash
-npx @modelcontextprotocol/inspector uvx mcp-atlassian
-```
-
-For local development:
-```bash
 cd path/to/mcp-atlassian
-npx @modelcontextprotocol/inspector node ./build/index.js
+npx @modelcontextprotocol/inspector node build/index.js
 ```
 
 View logs with:
 ```bash
 tail -n 20 -f ~/Library/Logs/Claude/mcp*.log
-```
-
-## Development
-
-For local development testing:
-
-1. Use the MCP inspector (see [Debugging](#debugging))
-2. Test with Claude Desktop using the configuration above
-
-## Build
-
-Docker build:
-```bash
-docker build -t mcp/atlassian .
 ```
 
 ## Security
@@ -269,3 +165,6 @@ docker build -t mcp/atlassian .
 ## License
 
 Licensed under MIT - see [LICENSE](LICENSE) file. This is not an official Atlassian product.
+
+---
+Note: This is a fork of the [original mcp-atlassian repository](https://github.com/sooperset/mcp-atlassian).
