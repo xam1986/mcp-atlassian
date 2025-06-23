@@ -104,19 +104,25 @@ This integration is designed specifically for Atlassian Server instances and doe
 
 The MCP Atlassian integration supports using either Confluence, Jira, or both services. You only need to provide the environment variables for the service(s) you want to use.
 
-### Usage with Cline or langchain
+### Usage with Cline or another agents
 
-1. Get API tokens from personal access tokens
+1. Get API tokens from personal access tokens from jira and confluence profile
 
-2. Add to your `cline_mcp_settings.json` with only the services you need:
+2. Rename file `.env.example` to `.env` and set fields:
+   - CONFLUENCE_API_TOKEN
+   - CONFLUENCE_URL
+   - JIRA_API_TOKEN
+   - JIRA_URL
+
+3. Add to your `cline_mcp_settings.json` with only the services you need:
 
 For Confluence only:
 ```json
 {
   "mcpServers": {
     "mcp-atlassian": {
-      "command": "python",
-      "args": ["path/to/src/mcp_atlassian/server.py"],
+      "url": "http://localhost:8093/sse",
+      "type": "sse",
       "env": {
         "CONFLUENCE_URL": "https://your-domain/wiki",
         "CONFLUENCE_API_TOKEN": "your_api_token"
@@ -131,8 +137,8 @@ For Jira only:
 {
   "mcpServers": {
     "mcp-atlassian": {
-      "command": "python",
-      "args": ["path/to/src/mcp_atlassian/server.py"],
+      "url": "http://localhost:8093/sse",
+      "type": "sse",
       "env": {
         "JIRA_URL": "https://your-domain/jira",
         "JIRA_API_TOKEN": "your_api_token"
@@ -147,8 +153,8 @@ For both services:
 {
   "mcpServers": {
     "mcp-atlassian": {
-      "command": "python",
-      "args": ["path/to/src/mcp_atlassian/server.py"],
+      "url": "http://localhost:8093/sse",
+      "type": "sse",
       "env": {
         "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
         "CONFLUENCE_API_TOKEN": "your_api_token",
