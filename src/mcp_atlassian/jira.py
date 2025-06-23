@@ -1,14 +1,15 @@
 import logging
 import os
+from collections import defaultdict
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from atlassian import Jira
 from dotenv import load_dotenv
 
-from .config import JiraConfig
-from .document_types import Document
-from .preprocessing import TextPreprocessor
+from config import JiraConfig
+from document_types import Document
+from preprocessing import TextPreprocessor
 
 # Load environment variables
 load_dotenv()
@@ -22,18 +23,17 @@ class JiraFetcher:
 
     def __init__(self):
         url = os.getenv("JIRA_URL")
-        username = os.getenv("JIRA_USERNAME")
         token = os.getenv("JIRA_API_TOKEN")
 
-        if not all([url, username, token]):
+        if not all([url, token]):
             raise ValueError("Missing required Jira environment variables")
 
-        self.config = JiraConfig(url=url, username=username, api_token=token)
+        self.config = JiraConfig(url=url, api_token=token)
         self.jira = Jira(
             url=self.config.url,
-            username=self.config.username,
-            password=self.config.api_token,  # API token is used as password
-            cloud=True,
+            token=self.config.api_token,  # API token is used as password
+            cloud=False,
+            verify_ssl=False
         )
         self.preprocessor = TextPreprocessor(self.config.url)
 
@@ -99,6 +99,26 @@ class JiraFetcher:
             # Format created date using new parser
             created_date = self._parse_date(issue["fields"]["created"])
 
+            links = issue["fields"].get("issuelinks", [])
+            issue_links = ""
+
+            if len(links) > 0:
+                # Группируем связи по type.inward
+                grouped_links = defaultdict(list)
+                for link in links:
+                    inward_type = link.get('type', {}).get('inward', 'Unknown')
+                    inward_issue = link.get('inwardIssue', {}).get('key', 'UNKNOWN')
+                    grouped_links[inward_type].append(inward_issue)
+
+                # Формируем строки в формате "inward_type: key1, key2, ..."
+                formatted_links = [
+                    f"{inward_type}: {', '.join(keys)}"
+                    for inward_type, keys in grouped_links.items()
+                ]
+
+                # Добавляем результат к issue_links
+                issue_links = issue_links + "\n" + "\n".join(formatted_links)
+
             # Combine content in a more structured way
             content = f"""Issue: {issue_key}
 Title: {issue['fields'].get('summary', '')}
@@ -108,6 +128,9 @@ Created: {created_date}
 
 Description:
 {description}
+
+Links: 
+{issue_links}
 
 Comments:
 """ + "\n".join(
@@ -132,7 +155,7 @@ Comments:
             raise
 
     def search_issues(
-        self, jql: str, fields: str = "*all", start: int = 0, limit: int = 50, expand: Optional[str] = None
+            self, jql: str, fields: str = "*all", start: int = 0, limit: int = 50, expand: Optional[str] = None
     ) -> List[Document]:
         """
         Search for issues using JQL.
@@ -176,3 +199,93 @@ Comments:
         """
         jql = f"project = {project_key} ORDER BY created DESC"
         return self.search_issues(jql, start=start, limit=limit)
+
+    def create_issue(self, projectKey: str, issueType: str, summary: str, descr: str,
+                     fields: Union[str, dict] = None,
+                     update_history: bool = False,
+                     update: Optional[dict] = None) -> Document:
+        """
+        Creates an issue or a sub-task from a JSON representation
+        :param projectKey: project Jira key
+        :param issueType: issue type
+        :param summary: issue summary
+        :param descr: issue description
+        :param fields: JSON data
+                mandatory keys are issuetype, summary and project
+        :param update: JSON data
+                Use it to link issues or update worklog
+        :param update_history: bool (if true then the user's project history is updated)
+        :return:
+            example:
+                fields = dict(summary='Into The Night',
+                              project = dict(key='APA'),
+                              issuetype = dict(name='Story')
+                              )
+                update = dict(issuelinks={
+                    "add": {
+                        "type": {
+                            "name": "Child-Issue"
+                            },
+                        "inwardIssue": {
+                            "key": "ISSUE-KEY"
+                            }
+                        }
+                    }
+                )
+                create_issue(fields=fields, update=update)
+        """
+        try:
+            logger.info(f"create_issue {projectKey}, {issueType}, {summary}")
+            if fields is None:
+                fields = {}
+
+            fields['project'] = {"key": projectKey}
+            fields['summary'] = summary
+            fields['issuetype'] = {"name": issueType}
+            fields['description'] = descr
+
+            response = self.jira.create_issue(fields, update_history, update)
+
+            metadata = fields
+
+            return Document(page_content=response, metadata=metadata)
+
+        except Exception as e:
+            logger.error(f"Error creating issue with {fields}: {str(e)}")
+            raise
+
+    def create_issue_link(self, linkType: str, inwardIssue: str, outwardIssue: str, comment: str = None) -> Document:
+        """
+        Creates an issue link between two issues.
+        :param linkType: link type
+        :param inwardIssue: from issue key
+        :param outwardIssue: to issue key
+        :param comment: comment
+        :return:
+        """
+        try:
+            logger.info(f"create_issue_link {linkType}, {inwardIssue}, {outwardIssue}")
+
+            data = {"type": {"name": linkType},
+                    "inwardIssue": {"key": inwardIssue},
+                    "outwardIssue": {"key": outwardIssue},
+                    "comment": {"body": comment}}
+
+            response = self.jira.create_issue_link(data)
+
+            metadata = data
+
+            return Document(page_content=response, metadata=metadata)
+
+        except Exception as e:
+            logger.error(f"Error link issue with {data}: {str(e)}")
+            raise
+
+    def get_issue_link_types(self) -> List[Document]:
+        """Returns a list of available issue link types,
+        if issue linking is enabled.
+        Each issue link type has an id,
+        a name and a label for the outward and inward link relationship.
+        """
+        response = self.jira.get_issue_link_types()
+        return Document(page_content=response, metadata=response)

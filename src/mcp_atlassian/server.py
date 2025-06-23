@@ -8,8 +8,8 @@ from mcp.server import Server
 from mcp.types import Resource, TextContent, Tool
 from pydantic import AnyUrl
 
-from .confluence import ConfluenceFetcher
-from .jira import JiraFetcher
+from confluence import ConfluenceFetcher
+from jira import JiraFetcher
 
 # Configure logging
 logging.basicConfig(level=logging.WARNING)
@@ -20,10 +20,10 @@ logging.getLogger("mcp.server.lowlevel.server").setLevel(logging.WARNING)
 def get_available_services():
     """Determine which services are available based on environment variables."""
     confluence_vars = all(
-        [os.getenv("CONFLUENCE_URL"), os.getenv("CONFLUENCE_USERNAME"), os.getenv("CONFLUENCE_API_TOKEN")]
+        [os.getenv("CONFLUENCE_URL"), os.getenv("CONFLUENCE_API_TOKEN")]
     )
 
-    jira_vars = all([os.getenv("JIRA_URL"), os.getenv("JIRA_USERNAME"), os.getenv("JIRA_API_TOKEN")])
+    jira_vars = all([os.getenv("JIRA_URL"), os.getenv("JIRA_API_TOKEN")])
 
     return {"confluence": confluence_vars, "jira": jira_vars}
 
@@ -164,7 +164,7 @@ async def list_tools() -> list[Tool]:
                 ),
                 Tool(
                     name="confluence_get_page",
-                    description="Get content of a specific Confluence page by ID",
+                    description="Read confluence page by ID",
                     inputSchema={
                         "type": "object",
                         "properties": {
@@ -246,6 +246,69 @@ async def list_tools() -> list[Tool]:
                         "required": ["project_key"],
                     },
                 ),
+                Tool(
+                    name="create_issue",
+                    description="Create a new Jira issue",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "projectKey": {
+                                "type": "string",
+                                "description": "The project key where the issue will be created",
+                            },
+                            "issueType": {
+                                "type": "string",
+                                "description": "The type of issue to create (e.g., Bug, Story, Task)",
+                            },
+                            "summary": {
+                                "type": "string",
+                                "description": "The issue summary/title",
+                            },
+                            "descr": {
+                                "type": "string",
+                                "description": "The issue description",
+                            },
+                            "fields": {
+                                "type": "string",
+                                "description": "Additional fields to set on the issue",
+                                "additionalProperties": True
+                            },
+                        },
+                        "required": ["projectKey", "issueType", "summary", "descr"]
+                    },
+                ),
+                Tool(
+                    name="create_issue_link",
+                    description="Create a link between 2 issues",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "linkType": {
+                                "type": "string",
+                                "description": "The type of link issues",
+                            },
+                            "inwardIssue": {
+                                "type": "string",
+                                "description": "Link from issue key",
+                            },
+                            "outwardIssue": {
+                                "type": "string",
+                                "description": "Link to issue key",
+                            },
+                            "comment": {
+                                "type": "string",
+                                "description": "Comment",
+                            }
+                        },
+                        "required": ["linkType", "inwardIssue", "outwardIssue"]
+                    },
+                ),
+                Tool(
+                    name="get_issue_link_types",
+                    description="Get issue link types",
+                    inputSchema={"type": "object",
+                                 "properties": {}},
+                ),
             ]
         )
 
@@ -256,6 +319,7 @@ async def list_tools() -> list[Tool]:
 async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
     """Handle tool calls for Confluence and Jira operations."""
     try:
+        logger.info(f"call_tool: {name}({arguments})")
         if name == "confluence_search":
             limit = min(int(arguments.get("limit", 10)), 50)
             documents = confluence_fetcher.search(arguments["query"], limit)
@@ -271,6 +335,7 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
                 }
                 for doc in documents
             ]
+            logger.info(f"{name}: {search_results})")
 
             return [TextContent(type="text", text=json.dumps(search_results, indent=2))]
 
@@ -282,6 +347,8 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
                 result = {"content": doc.page_content, "metadata": doc.metadata}
             else:
                 result = {"content": doc.page_content}
+
+            logger.info(f"{name}: {result})")
 
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
@@ -296,11 +363,14 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
                 for comment in comments
             ]
 
+            logger.info(f"{name}: {formatted_comments})")
+
             return [TextContent(type="text", text=json.dumps(formatted_comments, indent=2))]
 
         elif name == "jira_get_issue":
             doc = jira_fetcher.get_issue(arguments["issue_key"], expand=arguments.get("expand"))
             result = {"content": doc.page_content, "metadata": doc.metadata}
+            logger.info(f"{name}: {result})")
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
         elif name == "jira_search":
@@ -321,6 +391,7 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
                 }
                 for doc in documents
             ]
+            logger.info(f"{name}: {search_results})")
             return [TextContent(type="text", text=json.dumps(search_results, indent=2))]
 
         elif name == "jira_get_project_issues":
@@ -337,7 +408,29 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
                 }
                 for doc in documents
             ]
+            logger.info(f"{name}: {project_issues})")
             return [TextContent(type="text", text=json.dumps(project_issues, indent=2))]
+
+        elif name == "create_issue":
+            doc = jira_fetcher.create_issue(arguments["projectKey"], arguments["issueType"], arguments["summary"],
+                                            arguments.get("descr"), fields=arguments.get("fields"))
+            result = {"content": doc.page_content, "metadata": doc.metadata}
+            logger.info(f"{name}: {result})")
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "create_issue_link":
+            doc = jira_fetcher.create_issue_link(arguments["linkType"], arguments["inwardIssue"],
+                                                 arguments["outwardIssue"],
+                                                 arguments.get("comment"))
+            result = {"content": doc.page_content, "metadata": doc.metadata}
+            logger.info(f"{name}: {result})")
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_issue_link_types":
+            doc = jira_fetcher.get_issue_link_types()
+            result = {"content": doc.page_content, "metadata": doc.metadata}
+            logger.info(f"{name}: {result})")
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
         raise ValueError(f"Unknown tool: {name}")
 

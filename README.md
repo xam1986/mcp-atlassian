@@ -1,9 +1,7 @@
 # MCP Atlassian
 
-Model Context Protocol (MCP) server for Atlassian Cloud products (Confluence and Jira). This integration is designed specifically for Atlassian Cloud instances and does not support Atlassian Server or Data Center deployments.
-
-### Feature Demo
-![Demo](https://github.com/user-attachments/assets/995d96a8-4cf3-4a03-abe1-a9f6aea27ac0)
+Model Context Protocol (MCP) server for Atlassian (Confluence and Jira). 
+This integration is designed specifically for Atlassian Server instances and does not support Atlassian Cloud.
 
 ### Resources
 
@@ -11,8 +9,6 @@ Model Context Protocol (MCP) server for Atlassian Cloud products (Confluence and
 - `confluence://{space_key}/pages/{title}`: Access specific Confluence pages
 - `jira://{project_key}`: Access Jira project and its issues
 - `jira://{project_key}/issues/{issue_key}`: Access specific Jira issues
-
-### Tools
 
 #### Confluence Tools
 
@@ -60,44 +56,69 @@ Model Context Protocol (MCP) server for Atlassian Cloud products (Confluence and
      - `limit` (number, optional): Results limit (1-50, default: 10)
    - Returns: Array of project issues with metadata
 
+4. `create_issue`
+- Get all issues for a specific Jira project
+   - Inputs:
+     - `project_key` (string): Project key
+     - `issueType`: issue type
+     - `summary`: issue summary
+     - `descr`: issue description
+     - `fields`: JSON data mandatory keys are issuetype, summary and project
+     - `update`: JSON dataю Use it to link issues or update worklog
+     - `update_history`: bool (if true then the user's project history is updated)
+   - Returns: created issue
+   
+5. `create_issue_link`
+- Get all issues for a specific Jira project
+   - Inputs:
+      - `linkType`: link type
+      - `inwardIssue`: from issue key
+      - `outwardIssue`: to issue key
+      - `comment`: comment
+   - Returns: 
+
+6. `get_issue_link_types`
+- Get all issues for a specific Jira project
+   - Inputs:
+   - Returns: a list of available issue link types, if issue linking is enabled. Each issue link type has an id, a name and a label for the outward and inward link relationship.
+
 ## Installation
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/pashpashpash/mcp-atlassian.git
+   git clone https://github.com/xam1986/mcp-atlassian.git
    cd mcp-atlassian
    ```
 
 2. **Install Dependencies**:
    ```bash
-   npm install
+   pip install -r requirements.txt
    ```
 
-3. **Build the Project**:
+3. **Run MCP server**:
    ```bash
-   npm run build
+   python run server.py
    ```
 
 ## Configuration
 
 The MCP Atlassian integration supports using either Confluence, Jira, or both services. You only need to provide the environment variables for the service(s) you want to use.
 
-### Usage with Claude Desktop
+### Usage with Cline or langchain
 
-1. Get API tokens from: https://id.atlassian.com/manage-profile/security/api-tokens
+1. Get API tokens from personal access tokens
 
-2. Add to your `claude_desktop_config.json` with only the services you need:
+2. Add to your `cline_mcp_settings.json` with only the services you need:
 
 For Confluence only:
 ```json
 {
   "mcpServers": {
     "mcp-atlassian": {
-      "command": "node",
-      "args": ["path/to/build/index.js"],
+      "command": "python",
+      "args": ["path/to/src/mcp_atlassian/server.py"],
       "env": {
-        "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
-        "CONFLUENCE_USERNAME": "your.email@domain.com",
+        "CONFLUENCE_URL": "https://your-domain/wiki",
         "CONFLUENCE_API_TOKEN": "your_api_token"
       }
     }
@@ -110,11 +131,10 @@ For Jira only:
 {
   "mcpServers": {
     "mcp-atlassian": {
-      "command": "node",
-      "args": ["path/to/build/index.js"],
+      "command": "python",
+      "args": ["path/to/src/mcp_atlassian/server.py"],
       "env": {
-        "JIRA_URL": "https://your-domain.atlassian.net",
-        "JIRA_USERNAME": "your.email@domain.com",
+        "JIRA_URL": "https://your-domain/jira",
         "JIRA_API_TOKEN": "your_api_token"
       }
     }
@@ -127,14 +147,12 @@ For both services:
 {
   "mcpServers": {
     "mcp-atlassian": {
-      "command": "node",
-      "args": ["path/to/build/index.js"],
+      "command": "python",
+      "args": ["path/to/src/mcp_atlassian/server.py"],
       "env": {
         "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
-        "CONFLUENCE_USERNAME": "your.email@domain.com",
         "CONFLUENCE_API_TOKEN": "your_api_token",
-        "JIRA_URL": "https://your-domain.atlassian.net",
-        "JIRA_USERNAME": "your.email@domain.com",
+        "JIRA_URL": "https://your-domain/jira",
         "JIRA_API_TOKEN": "your_api_token"
       }
     }
@@ -142,19 +160,6 @@ For both services:
 }
 ```
 
-## Debugging
-
-You can use the MCP inspector to debug the server:
-
-```bash
-cd path/to/mcp-atlassian
-npx @modelcontextprotocol/inspector node build/index.js
-```
-
-View logs with:
-```bash
-tail -n 20 -f ~/Library/Logs/Claude/mcp*.log
-```
 
 ## Security
 

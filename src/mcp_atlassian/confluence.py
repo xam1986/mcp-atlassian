@@ -5,9 +5,9 @@ from typing import Optional
 from atlassian import Confluence
 from dotenv import load_dotenv
 
-from .config import ConfluenceConfig
-from .document_types import Document
-from .preprocessing import TextPreprocessor
+from config import ConfluenceConfig
+from document_types import Document
+from preprocessing import TextPreprocessor
 
 # Load environment variables
 load_dotenv()
@@ -21,18 +21,17 @@ class ConfluenceFetcher:
 
     def __init__(self):
         url = os.getenv("CONFLUENCE_URL")
-        username = os.getenv("CONFLUENCE_USERNAME")
         token = os.getenv("CONFLUENCE_API_TOKEN")
 
-        if not all([url, username, token]):
+        if not all([url, token]):
             raise ValueError("Missing required Confluence environment variables")
 
-        self.config = ConfluenceConfig(url=url, username=username, api_token=token)
+        self.config = ConfluenceConfig(url=url, api_token=token)
         self.confluence = Confluence(
             url=self.config.url,
-            username=self.config.username,
-            password=self.config.api_token,  # API token is used as password
-            cloud=True,
+            token=self.config.api_token,  # API token is used as password
+            cloud=False,
+            verify_ssl=False
         )
         self.preprocessor = TextPreprocessor(self.config.url, self.confluence)
 

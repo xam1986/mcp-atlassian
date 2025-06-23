@@ -6,7 +6,6 @@ class ConfluenceConfig:
     """Confluence API configuration."""
 
     url: str  # Base URL for Confluence
-    username: str  # Email or username
     api_token: str  # API token used as password
 
     @property
@@ -20,7 +19,6 @@ class JiraConfig:
     """Jira API configuration."""
 
     url: str  # Base URL for Jira
-    username: str  # Email or username
     api_token: str  # API token used as password
 
     @property
