@@ -4,9 +4,15 @@ import os
 from collections.abc import Sequence
 from typing import Any
 
+import uvicorn
 from mcp.server import Server
+from mcp.server.sse import SseServerTransport
 from mcp.types import Resource, TextContent, Tool
 from pydantic import AnyUrl
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import Response
+from starlette.routing import Mount, Route
 
 from confluence import ConfluenceFetcher
 from jira import JiraFetcher
@@ -32,10 +38,11 @@ def get_available_services():
 services = get_available_services()
 confluence_fetcher = ConfluenceFetcher() if services["confluence"] else None
 jira_fetcher = JiraFetcher() if services["jira"] else None
-app = Server("mcp-atlassian")
+mcp_server = Server("mcp-atlassian")
+server_port = "8093"
 
 
-@app.list_resources()
+@mcp_server.list_resources()
 async def list_resources() -> list[Resource]:
     """List available Confluence spaces and Jira projects as resources."""
     resources = []
@@ -78,7 +85,7 @@ async def list_resources() -> list[Resource]:
     return resources
 
 
-@app.read_resource()
+@mcp_server.read_resource()
 async def read_resource(uri: AnyUrl) -> str:
     """Read content from Confluence or Jira."""
     uri_str = str(uri)
@@ -133,7 +140,7 @@ async def read_resource(uri: AnyUrl) -> str:
     raise ValueError(f"Invalid resource URI: {uri}")
 
 
-@app.list_tools()
+@mcp_server.list_tools()
 async def list_tools() -> list[Tool]:
     """List available Confluence and Jira tools."""
     tools = []
@@ -315,7 +322,7 @@ async def list_tools() -> list[Tool]:
     return tools
 
 
-@app.call_tool()
+@mcp_server.call_tool()
 async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
     """Handle tool calls for Confluence and Jira operations."""
     try:
@@ -439,15 +446,43 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
         raise RuntimeError(f"Tool execution failed: {str(e)}")
 
 
-async def main():
+def make_server_app() -> Starlette:
+    """Create test Starlette app with SSE transport"""
+    sse = SseServerTransport("/messages/")
+
+    async def handle_sse(request: Request) -> Response:
+        async with sse.connect_sse(
+                request.scope, request.receive, request._send
+        ) as streams:
+            await mcp_server.run(
+                streams[0], streams[1], mcp_server.create_initialization_options()
+            )
+        return Response()
+
+    app = Starlette(
+        routes=[
+            Route("/sse", endpoint=handle_sse),
+            Mount("/messages/", app=sse.handle_post_message),
+        ]
+    )
+
+    return app
+
+
+async def run_stdio():
     # Import here to avoid issues with event loops
     from mcp.server.stdio import stdio_server
 
     async with stdio_server() as (read_stream, write_stream):
-        await app.run(read_stream, write_stream, app.create_initialization_options())
+        await mcp_server.run(read_stream, write_stream, mcp_server.create_initialization_options())
 
 
 if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())
+    app = make_server_app()
+    server = uvicorn.Server(
+        config=uvicorn.Config(
+            app=app, host="127.0.0.1", port=server_port, log_level="info"
+        )
+    )
+    print(f"starting server on {server_port}")
+    server.run()
