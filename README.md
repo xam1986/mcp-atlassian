@@ -122,11 +122,7 @@ For Confluence only:
   "mcpServers": {
     "mcp-atlassian": {
       "url": "http://localhost:8093/sse",
-      "type": "sse",
-      "env": {
-        "CONFLUENCE_URL": "https://your-domain/wiki",
-        "CONFLUENCE_API_TOKEN": "your_api_token"
-      }
+      "type": "sse"
     }
   }
 }
@@ -138,11 +134,7 @@ For Jira only:
   "mcpServers": {
     "mcp-atlassian": {
       "url": "http://localhost:8093/sse",
-      "type": "sse",
-      "env": {
-        "JIRA_URL": "https://your-domain/jira",
-        "JIRA_API_TOKEN": "your_api_token"
-      }
+      "type": "sse"
     }
   }
 }
@@ -154,13 +146,7 @@ For both services:
   "mcpServers": {
     "mcp-atlassian": {
       "url": "http://localhost:8093/sse",
-      "type": "sse",
-      "env": {
-        "CONFLUENCE_URL": "https://your-domain.atlassian.net/wiki",
-        "CONFLUENCE_API_TOKEN": "your_api_token",
-        "JIRA_URL": "https://your-domain/jira",
-        "JIRA_API_TOKEN": "your_api_token"
-      }
+      "type": "sse"
     }
   }
 }
