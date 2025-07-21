@@ -186,7 +186,7 @@ async def list_tools() -> list[Tool]:
                     },
                 ),
                 Tool(
-                    name="split_page",
+                    name="confluence_split_page",
                     description="Split confluence page into parts",
                     inputSchema={
                         "type": "object",
@@ -219,7 +219,7 @@ async def list_tools() -> list[Tool]:
                     },
                 ),
                 Tool(
-                    name="get_page_by_title",
+                    name="confluence_get_page_by_title",
                     description="Read confluence page title",
                     inputSchema={
                         "type": "object",
@@ -236,7 +236,7 @@ async def list_tools() -> list[Tool]:
                     },
                 ),
                 Tool(
-                    name="get_space_pages",
+                    name="confluence_get_space_pages",
                     description="Get all pages from a specific space",
                     inputSchema={
                         "type": "object",
@@ -439,7 +439,7 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
 
             return [TextContent(type="text", text=json.dumps(formatted_comments, indent=2))]
 
-        elif name == "split_page":
+        elif name == "confluence_split_page":
 
             start = int(arguments.get("start", 0))
             limit = int(arguments.get("limit", 10))
@@ -467,7 +467,7 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
 
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
-        elif name == "get_page_by_title":
+        elif name == "confluence_get_page_by_title":
             doc = confluence_fetcher.get_page_by_title(arguments["space_key"], arguments["title"])
             include_metadata = arguments.get("include_metadata", True)
 
@@ -480,7 +480,7 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
 
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
-        elif name == "get_space_pages":
+        elif name == "confluence_get_space_pages":
             start = int(arguments.get("start", 0))
             limit = min(int(arguments.get("limit", 10)), 50)
             documents = confluence_fetcher.get_space_pages(arguments["query"], start, limit)

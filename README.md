@@ -26,7 +26,7 @@ This integration is designed specifically for Atlassian Server instances and doe
      - `include_metadata` (boolean, optional): Include page metadata (default: true)
    - Returns: Page content and optional metadata
 
-  3. `get_page_by_title`
+  3. `confluence_get_page_by_title`
      - Получение содержимого страницы Confluence по её заголовку
      - Входные параметры:
        - `title` (строка): Заголовок страницы
@@ -34,14 +34,14 @@ This integration is designed specifically for Atlassian Server instances and doe
        - `include_metadata` (логическое значение, опционально): Включить метаданные страницы (по умолчанию: true)
      - Возвращает: Содержимое страницы и опциональные метаданные
 
-  4. `get_space_pages`
+  4. `confluence_get_space_pages`
      - Получение списка всех страниц в указанном пространстве Confluence
      - Входные параметры:
        - `space_key` (строка): Ключ пространства
        - `limit` (число, опционально): Ограничение количества результатов (1-50, по умолчанию: 10)
      - Возвращает: Массив страниц с page_id, title, url, last_modified, type и excerpt
 
-  5. `split_page`
+  5. `confluence_split_page`
      - Разделение страницы Confluence на несколько подстраниц
      - Входные параметры:
        - `page_id` (строка): ID страницы для разделения
