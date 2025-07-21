@@ -26,6 +26,28 @@ This integration is designed specifically for Atlassian Server instances and doe
      - `include_metadata` (boolean, optional): Include page metadata (default: true)
    - Returns: Page content and optional metadata
 
+  3. `get_page_by_title`
+     - Получение содержимого страницы Confluence по её заголовку
+     - Входные параметры:
+       - `title` (строка): Заголовок страницы
+       - `space_key` (строка): Ключ пространства, где находится страница
+       - `include_metadata` (логическое значение, опционально): Включить метаданные страницы (по умолчанию: true)
+     - Возвращает: Содержимое страницы и опциональные метаданные
+
+  4. `get_space_pages`
+     - Получение списка всех страниц в указанном пространстве Confluence
+     - Входные параметры:
+       - `space_key` (строка): Ключ пространства
+       - `limit` (число, опционально): Ограничение количества результатов (1-50, по умолчанию: 10)
+     - Возвращает: Массив страниц с page_id, title, url, last_modified, type и excerpt
+
+  5. `split_page`
+     - Разделение страницы Confluence на несколько подстраниц
+     - Входные параметры:
+       - `page_id` (строка): ID страницы для разделения
+       - `split_titles` (массив строк): Заголовки для новых подстраниц
+       - `split_contents` (массив строк): Содержимое для новых подстраниц
+     - Возвращает: Массив ID созданных подстраниц
 3. `confluence_get_comments`
    - Get comments for a specific Confluence page
    - Input: 
@@ -116,31 +138,6 @@ The MCP Atlassian integration supports using either Confluence, Jira, or both se
 
 3. Add to your `cline_mcp_settings.json` with only the services you need:
 
-For Confluence only:
-```json
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "url": "http://localhost:8093/sse",
-      "type": "sse"
-    }
-  }
-}
-```
-
-For Jira only:
-```json
-{
-  "mcpServers": {
-    "mcp-atlassian": {
-      "url": "http://localhost:8093/sse",
-      "type": "sse"
-    }
-  }
-}
-```
-
-For both services:
 ```json
 {
   "mcpServers": {
