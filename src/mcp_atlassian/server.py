@@ -186,12 +186,77 @@ async def list_tools() -> list[Tool]:
                     },
                 ),
                 Tool(
+                    name="split_page",
+                    description="Split confluence page into parts",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "page_id": {"type": "string", "description": "Confluence page ID"},
+                            "start": {
+                                "type": "number",
+                                "description": "Start index of results (1-100)",
+                                "default": 0,
+                                "minimum": 0
+                            },
+                            "limit": {
+                                "type": "number",
+                                "description": "Maximum number of results (1-100)",
+                                "default": 10,
+                                "minimum": 1,
+                                "maximum": 100,
+                            },
+                        },
+                        "required": ["page_id"],
+                    },
+                ),
+                Tool(
                     name="confluence_get_comments",
                     description="Get comments for a specific Confluence page",
                     inputSchema={
                         "type": "object",
                         "properties": {"page_id": {"type": "string", "description": "Confluence page ID"}},
                         "required": ["page_id"],
+                    },
+                ),
+                Tool(
+                    name="get_page_by_title",
+                    description="Read confluence page title",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "space_key": {"type": "string", "description": "Confluence space"},
+                            "title": {"type": "string", "description": "Confluence title"},
+                            "include_metadata": {
+                                "type": "boolean",
+                                "description": "Whether to include page metadata",
+                                "default": True,
+                            },
+                        },
+                        "required": ["space_key", "title"],
+                    },
+                ),
+                Tool(
+                    name="get_space_pages",
+                    description="Get all pages from a specific space",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "space_key": {"type": "string", "description": "Confluence space"},
+                            "start": {
+                                "type": "number",
+                                "description": "Start index of results",
+                                "default": 0,
+                                "minimum": 0
+                            },
+                            "limit": {
+                                "type": "number",
+                                "description": "Maximum number of results",
+                                "default": 10,
+                                "minimum": 1,
+                                "maximum": 50,
+                            },
+                        },
+                        "required": ["space_key"],
                     },
                 ),
             ]
@@ -373,6 +438,67 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
             logger.info(f"{name}: {formatted_comments})")
 
             return [TextContent(type="text", text=json.dumps(formatted_comments, indent=2))]
+
+        elif name == "split_page":
+
+            start = int(arguments.get("start", 0))
+            limit = int(arguments.get("limit", 10))
+            page_id = arguments["page_id"]
+
+            documents = confluence_fetcher.split_page(page_id)
+
+            split_results = [
+                {
+                    "content": doc.page_content,
+                    "metadata": doc.metadata,
+                }
+                for doc in documents[start:start + limit]
+            ]
+
+            result = {
+                "page_id": page_id,
+                "start": start,
+                "limit": limit,
+                "count": len(documents),
+                "parts": split_results
+            }
+
+            logger.info(f"{name}: {documents}, {start}, {limit})")
+
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_page_by_title":
+            doc = confluence_fetcher.get_page_by_title(arguments["space_key"], arguments["title"])
+            include_metadata = arguments.get("include_metadata", True)
+
+            if include_metadata:
+                result = {"content": doc.page_content, "metadata": doc.metadata}
+            else:
+                result = {"content": doc.page_content}
+
+            logger.info(f"{name}: {result})")
+
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+        elif name == "get_space_pages":
+            start = int(arguments.get("start", 0))
+            limit = min(int(arguments.get("limit", 10)), 50)
+            documents = confluence_fetcher.get_space_pages(arguments["query"], start, limit)
+            search_results = [
+                {
+                    "page_id": doc.metadata["page_id"],
+                    "title": doc.metadata["title"],
+                    "space": doc.metadata["space"],
+                    "url": doc.metadata["url"],
+                    "last_modified": doc.metadata["last_modified"],
+                    "type": doc.metadata["type"],
+                    "excerpt": doc.page_content,
+                }
+                for doc in documents
+            ]
+            logger.info(f"{name}: {search_results})")
+
+            return [TextContent(type="text", text=json.dumps(search_results, indent=2))]
 
         elif name == "jira_get_issue":
             doc = jira_fetcher.get_issue(arguments["issue_key"], expand=arguments.get("expand"))

@@ -4,6 +4,7 @@ from typing import Optional
 
 from atlassian import Confluence
 from dotenv import load_dotenv
+from langchain_text_splitters import MarkdownTextSplitter
 
 from config import ConfluenceConfig
 from document_types import Document
@@ -14,6 +15,13 @@ load_dotenv()
 
 # Configure logging
 logger = logging.getLogger("mcp-atlassian")
+
+
+def split_md_document(markdown_document: str):
+    markdown_splitter = MarkdownTextSplitter()
+    documents = markdown_splitter.create_documents(markdown_splitter.split_text(markdown_document))
+    logger.info(f"Total documents: {len(documents)}")
+    return documents
 
 
 class ConfluenceFetcher:
@@ -66,6 +74,16 @@ class ConfluenceFetcher:
         }
 
         return Document(page_content=processed_markdown if clean_html else processed_html, metadata=metadata)
+
+    def split_page(
+            self, page_id: str, clean_html: bool = True
+    ) -> list[Document]:
+        """Split a page into parts."""
+        page = self.get_page_content(page_id=page_id, clean_html=clean_html)
+
+        documents = split_md_document(page.page_content)
+
+        return documents
 
     def get_page_by_title(self, space_key: str, title: str, clean_html: bool = True) -> Optional[Document]:
         """Get page content by space key and title."""
